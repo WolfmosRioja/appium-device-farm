@@ -3,3 +3,5 @@ node_modules
 lib/
 .DS_Store
 .history
+local_appium_home/
+.nyc_output/
