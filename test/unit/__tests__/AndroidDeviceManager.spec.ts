@@ -1,12 +1,16 @@
-import sinon from 'sinon';
-import { expect } from 'chai';
-import AndroidDeviceManager from '../../src/device-managers/AndroidDeviceManager';
-import * as Helper from '../../src/helpers';
-import * as DeviceUtils from '../../src/device-utils';
-import { getAdbOriginal } from './GetAdbOriginal';
-import ip from 'ip';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
 
-var sandbox = sinon.createSandbox();
+import * as sinon from 'sinon';
+import AndroidDeviceManager from '../../../src/device-managers/AndroidDeviceManager';
+import * as Helper from '../../../src/helpers';
+import * as DeviceUtils from '../../../src/device-utils';
+import * as ip from 'ip';
+import { getAdbOriginal } from './GetAdbOriginal';
+import { Container } from 'typedi';
+const sandbox = sinon.createSandbox();
+import ChromeDriverManager from '../../../src/device-managers/ChromeDriverManager';
+import log from '../../../src/logger';
 
 const cliArgs = {
   'device-farm': {
@@ -17,9 +21,77 @@ const cliArgs = {
 };
 let adb;
 let cloneAdb;
+const androidManager = new AndroidDeviceManager();
+
+describe('getChromeVersion', () => {
+  const adbInstanceMock = {
+    adbExec: jest.fn(),
+  };
+  const udid = 'test-udid';
+  const cliArgs = {
+    plugin: {
+      'device-farm': {
+        skipChromeDownload: false,
+      },
+    },
+  };
+  const chromeDriverManagerMock = {
+    downloadChromeDriver: jest.fn(),
+  };
+  Container.get = jest.fn().mockReturnValue(chromeDriverManagerMock);
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should download ChromeDriver if version is found', async () => {
+    adbInstanceMock.adbExec.mockResolvedValueOnce('Some output versionName=92.0.4515.131');
+    chromeDriverManagerMock.downloadChromeDriver.mockResolvedValueOnce('/path/to/chromedriver');
+
+    const result = await androidManager.getChromeVersion(adbInstanceMock, udid, cliArgs);
+
+    expect(result).toBe('/path/to/chromedriver');
+    expect(Container.get).toBeCalledWith(ChromeDriverManager);
+    expect(chromeDriverManagerMock.downloadChromeDriver).toBeCalledWith('92');
+  });
+
+  it('should skip ChromeDriver download if skipChromeDownload is true', async () => {
+    log.warn = jest.fn();
+    const cliArgsWithSkipDownload = {
+      ...cliArgs,
+      plugin: {
+        'device-farm': {
+          skipChromeDownload: true,
+        },
+      },
+    };
+
+    const result = await androidManager.getChromeVersion(
+      adbInstanceMock,
+      udid,
+      cliArgsWithSkipDownload
+    );
+
+    expect(result).toBeUndefined();
+    expect(log.warn).toBeCalledWith(
+      'skipChromeDownload server arg is set; skipping Chromedriver installation.'
+    );
+    expect(log.warn).toBeCalledWith(
+      'Android web/hybrid testing will not be possible without Chromedriver.'
+    );
+  });
+
+  it('should log a warning if an error occurs while getting package info', async () => {
+    log.warn = jest.fn();
+    adbInstanceMock.adbExec.mockRejectedValueOnce(new Error('Some error'));
+
+    await androidManager.getChromeVersion(adbInstanceMock, udid, cliArgs);
+
+    expect(log.warn).toBeCalledWith('Error \'Some error\' while dumping package info');
+  });
+});
 
 describe('Android Device Manager', function () {
-  this.timeout(500000);
   afterEach(function () {
     sandbox.restore();
   });
@@ -58,6 +130,8 @@ describe('Android Device Manager', function () {
     deviceList.set(adb, [{ udid: 'emulator-5554', state: 'device' }]);
     deviceList.set(cloneAdb, [{ udid: 'emulator-5555', state: 'device' }]);
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     sandbox.stub(androidDevices, 'getConnectedDevices').returns(deviceList);
     const getDeviceVersion = sandbox.stub(androidDevices, 'getDeviceVersion');
     getDeviceVersion.onFirstCall().returns('9');
@@ -70,7 +144,7 @@ describe('Android Device Manager', function () {
     sandbox.stub(Helper, 'getFreePort').returns(54321);
     sandbox.stub(DeviceUtils, 'getUtilizationTime').returns(0);
     const devices = await androidDevices.getDevices('both', [], { port: 4723, plugin: cliArgs });
-    expect(devices).to.deep.equal([
+    expect(devices).toEqual([
       {
         busy: false,
         adbRemoteHost: null,
@@ -131,7 +205,7 @@ describe('Android Device Manager', function () {
       port: 4723,
       plugin: cliArgs,
     });
-    expect(devices).to.deep.equal([
+    expect(devices).toEqual([
       {
         busy: false,
         adbPort: 5037,
@@ -175,7 +249,7 @@ describe('Android Device Manager', function () {
       port: 4723,
       plugin: cliArgs,
     });
-    expect(devices).to.deep.equal([
+    expect(devices).toEqual([
       {
         busy: false,
         name: 'Nexus 6',

@@ -16,7 +16,6 @@ import ip from 'ip';
 import NodeDevices from './NodeDevices';
 import { addNewDevice, removeDevice } from '../data-service/device-service';
 import Devices from './cloud/Devices';
-import { DeviceModel } from '../data-service/db';
 
 export default class AndroidDeviceManager implements IDeviceManager {
   private adb: any;
@@ -311,19 +310,21 @@ export default class AndroidDeviceManager implements IDeviceManager {
     }
   }
 
+  /* istanbul ignore next */
   public async downloadChromeDriver(version: any) {
     const instance = await ChromeDriverManager.getInstance();
     return await instance.downloadChromeDriver(version);
   }
 
+  /* istanbul ignore next */
   private async getDeviceVersion(adbInstance: any, udid: string) {
     return await this.getDeviceProperty(adbInstance, udid, 'ro.build.version.release');
   }
-
+  /* istanbul ignore next */
   private async getDeviceProperty(adbInstance: any, udid: string, prop: string) {
     return await (await adbInstance).adbExec(['-s', udid, 'shell', 'getprop', prop]);
   }
-
+  /* istanbul ignore next */
   private async isRealDevice(adbInstance: any, udid: string): Promise<boolean> {
     const character = await this.getDeviceProperty(adbInstance, udid, 'ro.build.characteristics');
     return character !== 'emulator';
@@ -351,6 +352,7 @@ export default class AndroidDeviceManager implements IDeviceManager {
     return sdkRoot;
   }
 
+  /* istanbul ignore next */
   private getDeviceName = async (adbInstance: any, udid: string) =>
     await this.getDeviceProperty(adbInstance, udid, 'ro.product.name');
 }
