@@ -111,6 +111,7 @@ export default class AndroidDeviceManager implements IDeviceManager {
 
   private async deviceInfo(device: any, adbInstance: any, cliArgs: any) {
     const systemPort = await getFreePort();
+    const mjpegServerPort = await getFreePort();
     const totalUtilizationTimeMilliSec = await getUtilizationTime(device.udid);
     const [sdk, realDevice, name, chromeDriverPath] = await Promise.all([
       this.getDeviceVersion(adbInstance, device.udid),
@@ -136,6 +137,7 @@ export default class AndroidDeviceManager implements IDeviceManager {
         totalUtilizationTimeMilliSec: totalUtilizationTimeMilliSec,
         sessionStartTime: 0,
         chromeDriverPath,
+        mjpegServerPort
       },
     ] as Array<IDevice>;
   }

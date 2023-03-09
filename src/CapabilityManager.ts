@@ -20,7 +20,7 @@ export async function androidCapabilities(caps: ISessionCapability, freeDevice: 
   if (freeDevice.chromeDriverPath)
     caps.firstMatch[0]['appium:chromedriverExecutable'] = freeDevice.chromeDriverPath;
   if (!isCapabilityAlreadyPresent(caps, 'appium:mjpegServerPort')) {
-    caps.firstMatch[0]['appium:mjpegServerPort'] = await getPort();
+    caps.firstMatch[0]['appium:mjpegServerPort'] = freeDevice.mjpegServerPort;
   }
   deleteAlwaysMatch(caps, 'appium:udid');
   deleteAlwaysMatch(caps, 'appium:systemPort');
